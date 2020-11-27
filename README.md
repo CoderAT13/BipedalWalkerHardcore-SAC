@@ -6,7 +6,7 @@
 
 * [python 3.7](https://www.python.org) 
 * [pytorch 1.0.1](https://pytorch.org/) [ Warning ! ]
-* (I ever used v1.7, the I watse a month to deal with it using the same code but without any network changes, please be careful!)
+* (I ever used v1.7, then I watse a month to deal with it using the same code but without any network changes, please be careful!)
 * [gym 0.13.1](https://github.com/openai/gym)
 
 
