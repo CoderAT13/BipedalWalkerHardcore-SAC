@@ -25,6 +25,15 @@ reward_scale = 5 // reward *= reward_scale
 capacity=2000000
 ```
 
+## Tech Note
+
+### Program Logic
+![](imgs/SAC-4.jpg)
+
+### Paper Related
+
+![](imgs/SAC-5.jpg)
+
 ## How to use my code?
 
 1. Train from blank network
