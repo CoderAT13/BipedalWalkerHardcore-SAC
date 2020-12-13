@@ -1,5 +1,25 @@
 # BipedalWalker Test With Different Params (SAC)
 
+
+- [BipedalWalker Test With Different Params (SAC)](#bipedalwalker-test-with-different-params-sac)
+  - [0. My Note](#0-my-note)
+    - [(1) Base Program Framework](#1-base-program-framework)
+    - [(2) Update Accroding to Paper](#2-update-accroding-to-paper)
+    - [(3) Actor Sample Action Process](#3-actor-sample-action-process)
+    - [(4) Network Update Comprehension](#4-network-update-comprehension)
+  - [Successful Origin Training Params](#successful-origin-training-params)
+  - [1. LOG_STD_MAX](#1-log_std_max)
+    - [tanh(x) Probability Density Function with Different STD](#tanhx-probability-density-function-with-different-std)
+    - [Training With Different LOG_STD_MAX](#training-with-different-log_std_max)
+    - [The Phenomenon](#the-phenomenon)
+    - [Reason](#reason)
+    - [Conclusion](#conclusion)
+  - [2. Cross training](#2-cross-training)
+    - [Cross-Training VS Random-Only-Training VS Eval-Only-Training](#cross-training-vs-random-only-training-vs-eval-only-training)
+  - [3. soft-update tau](#3-soft-update-tau)
+  - [4. alpha (entropy offset param)](#4-alpha-entropy-offset-param)
+  - [Questions](#questions)
+
 ## 0. My Note
 
 ### (1) Base Program Framework
