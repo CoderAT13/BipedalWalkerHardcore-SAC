@@ -38,7 +38,7 @@ class SAC(object):
             _, _, action = self.policy.sample(state)
         return action.detach().cpu().numpy()[0]
 
-    def update_parameters(self, memory, batch_size, updates):
+    def update_parameters(self, memory, batch_size, updates, writer):
         # Sample a batch from memory
         state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.sample(batch_size=batch_size)
 
@@ -59,7 +59,7 @@ class SAC(object):
         qf1_loss = F.mse_loss(qf1, next_q_value) 
         qf2_loss = F.mse_loss(qf2, next_q_value) 
         qf_loss = qf1_loss + qf2_loss
-  
+
         pi, log_pi, _ = self.policy.sample(state_batch)
 
         qf1_pi, qf2_pi = self.critic(state_batch, pi)
@@ -67,9 +67,7 @@ class SAC(object):
 
         policy_loss = ((self.alpha * log_pi) - min_qf_pi).mean() 
 
-        self.critic_optim.zero_grad()
-        qf_loss.backward()
-        self.critic_optim.step()
+        
         
         # self.critic_optim.zero_grad()
         # qf1_loss.backward()
@@ -78,20 +76,25 @@ class SAC(object):
         # self.critic_optim.zero_grad()
         # qf2_loss.backward()
         # self.critic_optim.step()
-        
         self.policy_optim.zero_grad()
         policy_loss.backward()
         self.policy_optim.step()
 
-        alpha_loss = -(self.log_alpha * (log_pi + self.target_entropy).detach()).mean()
+        self.critic_optim.zero_grad()
+        qf_loss.backward()
+        self.critic_optim.step()
 
-        self.alpha_optim.zero_grad()
-        alpha_loss.backward()
-        self.alpha_optim.step()
+        # alpha_loss = -(self.log_alpha * (log_pi + self.target_entropy).detach()).mean()
 
-        self.alpha = self.log_alpha.exp()
-        alpha_tlogs = self.alpha.clone() # For TensorboardX logs
+        # self.alpha_optim.zero_grad()
+        # alpha_loss.backward()
+        # self.alpha_optim.step()
+
+        # self.alpha = self.log_alpha.exp()
+        # alpha_tlogs = self.alpha.clone() # For TensorboardX logs
          
+        # writer.add_scalar('alpha', alpha_tlogs, updates)
+
         soft_update(self.critic_target, self.critic, self.tau)
 
 

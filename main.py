@@ -19,7 +19,8 @@ from tensorboardX import SummaryWriter
 from sac_agent import SAC
 from replay_memory import ReplayMemory
 
-from tensorboardX import SummaryWriter
+from datetime import datetime
+
 
 
 '''
@@ -30,13 +31,15 @@ Not the author's implementation !
 
 gamma=0.99
 batch_size=256
-lr=5e-4
-hidden_size=400
+lr=3e-4
+hidden_size=256
 tau=0.005
-alpha=0.2
+alpha=0.036
 start_steps=10000
 update_start_steps=1e4
 reward_scale = 5
+test_ep = 10
+
 
 
 
@@ -45,7 +48,7 @@ parser = argparse.ArgumentParser()
 
 def init_parser():
 
-    parser.add_argument("--env_name", default="BipedalWalkerHardcore-v3")  # OpenAI gym environment name
+    parser.add_argument("--env_name", default="BipedalWalker-v3")  # OpenAI gym environment name
 
     parser.add_argument('--capacity', default=2000000, type=int) # replay buffer size
     parser.add_argument('--iteration', default=100000, type=int) #  num of  games
@@ -62,25 +65,6 @@ def init_parser():
 init_parser()
 args = parser.parse_args()
 
-# class NormalizedActions(gym.ActionWrapper):
-#     def action(self, action):
-#         low = self.action_space.low
-#         high = self.action_space.high
-
-#         action = low + (action + 1.0) * 0.5 * (high - low)
-#         action = np.clip(action, low, high)
-
-#         return action
-
-#     def reverse_action(self, action):
-#         low = self.action_space.low
-#         high = self.action_space.high
-
-#         action = 2 * (action - low) / (high - low) - 1
-#         action = np.clip(action, low, high)
-
-#         return action
-
 
 env = gym.make(args.env_name)
 
@@ -90,7 +74,8 @@ env.action_space.seed(args.seed)
 torch.manual_seed(args.seed)
 np.random.seed(args.seed)
 
-writer = SummaryWriter('./logs_data')
+TIMESTAMP = "{0:%Y-%m-%dT%H-%M-%S/}".format(datetime.now())
+writer = SummaryWriter('./logs_data/alpha/staticAlpha')
 
 state_dim = env.observation_space.shape[0]
 action_dim = env.action_space.shape[0]
@@ -108,8 +93,9 @@ def main():
         agent.load_model()
     
     updates = 0
-
+    avg_reward = 0.
     total_steps = 0
+    count_1500 = 0
     time_start = time.time()
     scores_deque = deque(maxlen=100)
     avg_scores_array = []
@@ -119,23 +105,22 @@ def main():
         ep_s = 0
         done = False
         state = env.reset()
-        error_count = 0
         while not done:
             action = []
             if total_steps < start_steps and not args.load:
                 action = env.action_space.sample()
             else:
-                action = agent.select_action(state, True)
+                use_eval = False
+                if args.render:
+                    use_eval = True
+                else:
+                    if i % (test_ep*2) >= test_ep:
+                        use_eval = True
+                action = agent.select_action(state, use_eval)
 
             
 
             next_state, reward, done, info = env.step(action)
-
-            if reward < -0.009:
-                error_count += 1
-                if error_count == 80:
-                    reward = -5.0
-
 
             reward = reward * reward_scale
             
@@ -144,38 +129,45 @@ def main():
             total_steps += 1
             if args.render and i >= args.render_interval : env.render()
             
-            mask = 1 if (ep_s == 2000 or error_count == 80) else float(not done)
+            mask = 1 if (ep_s == 1600) else float(not done)
             if args.train:
                 replay_buffer.push(state, action, reward, next_state, mask)
 
-            if error_count == 100:
-                break
-            
-            
 
             state = next_state
+
+
+        if i % (test_ep*2) >= test_ep:
+            avg_reward += ep_r
+            writer.add_scalar('reward/test', ep_r, i)
+        if i % (test_ep*2) == test_ep*2 - 1:
+            avg_reward /= test_ep
+            writer.add_scalar('reward/test_avg', avg_reward, i/2)
+            avg_reward = 0.
+        
         if args.train:
             for upi in range(ep_s):
                 if args.load:
-                    if len(replay_buffer) >= 100000:
-                        agent.update_parameters(replay_buffer, batch_size, updates)
+                    if len(replay_buffer) >= 10000:
+                        agent.update_parameters(replay_buffer, batch_size, updates, writer)
                         updates += 1
                 if not args.load and len(replay_buffer) >= update_start_steps:
-                    agent.update_parameters(replay_buffer, batch_size, updates)
+                    agent.update_parameters(replay_buffer, batch_size, updates, writer)
                     updates += 1
 
 
-        scores_deque.append(ep_r)
-        avg_score = np.mean(scores_deque)
-        avg_scores_array.append(avg_score)
-
         writer.add_scalar('reward/train', ep_r, i)
-        writer.add_scalar('reward/avg', avg_score, i)
+        
         s =  (int)(time.time() - time_start)
-        print("Ep.: {}, Total Steps: {}, Ep.Steps: {}, Score: {:.2f}, Avg.Score: {:.2f}, Time: {:02}:{:02}:{:02}".\
-            format(i, total_steps, ep_s, ep_r, avg_score, \
+        print("Ep.: {}, Total Steps: {}, Ep.Steps: {}, Score: {:.2f}, Time: {:02}:{:02}:{:02}".\
+            format(i, total_steps, ep_s, ep_r, \
                   s//3600, s%3600//60, s%60))
 
+        if ep_r >= 1500:
+            count_1500 += 1
+            if count_1500 == 200:
+                agent.save_model()
+                break
 
         if args.train:
             if ep_r > 1400:
@@ -192,4 +184,5 @@ def main():
 
 
 if __name__ == '__main__':
+    
     main()

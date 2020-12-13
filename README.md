@@ -25,14 +25,7 @@ reward_scale = 5 // reward *= reward_scale
 capacity=2000000
 ```
 
-## Tech Note
-
-### Program Logic
-![](imgs/SAC-4.jpg)
-
-### Paper Related
-
-![](imgs/SAC-5.jpg)
+## [Tech Note](data/BipedalWalkerTest.md)
 
 ## How to use my code?
 
