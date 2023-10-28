@@ -25,7 +25,9 @@ reward_scale = 5 // reward *= reward_scale
 capacity=2000000
 ```
 
-## [Tech Note](data/BipedalWalkerTest.md)
+## [Techical Report](data/BipedalWalkerTest.md)
+
+https://github.com/CoderAT13/BipedalWalkerHardcore-SAC/blob/main/data/BipedalWalkerTest.md
 
 ## How to use my code?
 
